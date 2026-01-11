@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Wedding Invitation - Click to Open</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Wedding Invitation</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         body { 
@@ -15,44 +16,81 @@
             align-items: center; 
             height: 100vh; 
             font-family: 'Courier New', Courier, monospace;
+            touch-action: none; 
         }
         #ui-container {
             position: absolute;
             z-index: 10;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
         button {
             padding: 12px 24px;
             font-family: 'Courier New', Courier, monospace;
             font-size: 16px;
-            background: transparent;
+            background: rgba(240, 238, 230, 0.8);
             border: 1px solid #333;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: opacity 0.5s ease;
             letter-spacing: 2px;
             color: #333;
+            text-transform: uppercase;
+            backdrop-filter: blur(2px);
         }
         button:hover {
             background-color: #333;
             color: #f0eee6;
         }
         canvas { 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
             background-color: #f0eee6;
+            display: block;
         }
-        .hidden { display: none; }
     </style>
 </head>
 <body>
 
     <div id="ui-container">
-        <button id="openBtn">OPEN INVITATION</button>
+        <button id="openBtn">Open Invitation</button>
     </div>
 
 <script>
-    const { Engine, World, Bodies, Body } = Matter;
+    const { Engine, World, Bodies, Body, Common, Mouse, MouseConstraint } = Matter;
 
-    const width = 600;
-    const height = 800;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    const baseWidth = 600; 
+    let scale = Math.min(1, width / baseWidth);
+
+    const engine = Engine.create();
+    engine.gravity.y = 1; 
+    const world = engine.world;
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = width;
+    canvas.height = height;
+    document.body.appendChild(canvas);
+
+    const c_default = 0x0001; 
+    const c_falling = 0x0002; 
+    const c_landed  = 0x0004; 
+
+    let ground = Bodies.rectangle(width / 2, height + 30, width, 100, { 
+        isStatic: true,
+        collisionFilter: { category: c_default }
+    });
+    World.add(world, [ground]);
+
+    const mouse = Mouse.create(canvas);
+    const mouseConstraint = MouseConstraint.create(engine, {
+        mouse: mouse,
+        constraint: { stiffness: 0.2, render: { visible: false } }
+    });
+    World.add(world, mouseConstraint);
+    mouse.element.removeEventListener("mousewheel", mouse.mousewheel);
+    mouse.element.removeEventListener("DOMMouseScroll", mouse.mousewheel);
+
     const quote = [
         "Love bears all things, believes all things,",
         "hopes all things, endures all things.",
@@ -60,53 +98,99 @@
         "Love Never Fails."
     ];
 
-    const engine = Engine.create();
-    const world = engine.world;
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = width;
-    canvas.height = height;
-    document.body.appendChild(canvas);
-
-    // Physics Boundaries
-    const ground = Bodies.rectangle(width / 2, height - 20, width, 40, { isStatic: true });
-    const funnelL = Bodies.rectangle(width * 0.35, height * 0.75, 400, 10, { isStatic: true, angle: Math.PI / 3, friction: 0 });
-    const funnelR = Bodies.rectangle(width * 0.65, height * 0.75, 400, 10, { isStatic: true, angle: -Math.PI / 3, friction: 0 });
-    World.add(world, [ground, funnelL, funnelR]);
-
     let letters = [];
-    const startY = 250;
     let textVisible = false;
-    let animationStarted = false;
     let triggerTime = 0;
     let opacity = 0;
 
-    // Build the text block
-    ctx.font = "18px 'Courier New'";
-    quote.forEach((line, lineIdx) => {
-        const chars = line.split('');
-        const xOffset = (width / 2) - (chars.length * 11 / 2);
-        chars.forEach((char, charIdx) => {
-            if (char === " ") return;
-            const x = xOffset + (charIdx * 11);
-            const y = startY + (lineIdx * 35);
+    function initLetters() {
+        letters.forEach(l => World.remove(world, l.body));
+        letters = [];
 
-            const b = Bodies.rectangle(x, y, 10, 16, {
-                isStatic: true,
-                restitution: 0,
-                friction: 1.0,
-                frictionStatic: 1.5,
-                frictionAir: 0.1 
+        scale = Math.min(1, width / baseWidth);
+        
+        const charSize = 18 * scale;      
+        const charSpacing = 11 * scale;   
+        const lineHeight = 35 * scale;    
+        const bodyWidth = 10 * scale;     
+        const bodyHeight = 16 * scale;    
+
+        const totalBlockHeight = quote.length * lineHeight;
+        const startY = (height - totalBlockHeight) / 2;
+
+        ctx.font = `${charSize}px 'Courier New'`;
+
+        quote.forEach((line, lineIdx) => {
+            const chars = line.split('');
+            const lineWidth = chars.length * charSpacing;
+            const xOffset = (width / 2) - (lineWidth / 2); 
+            
+            chars.forEach((char, charIdx) => {
+                if (char === " ") return;
+                
+                const x = xOffset + (charIdx * charSpacing) + (charSpacing / 2);
+                const y = startY + (lineIdx * lineHeight);
+
+                const b = Bodies.rectangle(x, y, bodyWidth, bodyHeight, {
+                    isStatic: true,
+                    chamfer: { radius: 2 * scale },
+                    frictionAir: 0.05, 
+                    restitution: 0.0, 
+                    friction: 0.5,    
+                    collisionFilter: {
+                        category: c_falling,
+                        mask: c_default | c_landed 
+                    }
+                });
+
+                letters.push({ 
+                    body: b, 
+                    char: char, 
+                    lineIdx: lineIdx,
+                    released: false,
+                    isLanded: false,
+                    fontSize: charSize 
+                });
+                World.add(world, b);
             });
-
-            letters.push({ body: b, char: char, originalY: y, released: false });
-            World.add(world, b);
         });
+    }
+
+    initLetters();
+
+    const lineDelays = {}; 
+    let accumulatedDelay = 0;
+    for (let i = quote.length - 1; i >= 0; i--) {
+        lineDelays[i] = accumulatedDelay;
+        accumulatedDelay += (1200 + (quote[i].length * 30)); 
+    }
+
+    window.addEventListener('resize', () => {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+
+        Body.setPosition(ground, { x: width / 2, y: height + 30 });
+        Body.setVertices(ground, [
+            { x: 0, y: height }, 
+            { x: width, y: height }, 
+            { x: width, y: height + 60 }, 
+            { x: 0, y: height + 60 }
+        ]);
+        
+        if (!textVisible) {
+            initLetters();
+        }
     });
 
-    // BUTTON TRIGGER
+    // --- REVERTED CLICK LISTENER ---
+    // Text appears immediately now
     document.getElementById('openBtn').addEventListener('click', function() {
-        this.style.display = 'none'; // Hide button
+        this.style.opacity = '0';
+        setTimeout(() => this.style.display = 'none', 500);
+        
+        // Show text immediately
         textVisible = true;
         triggerTime = Date.now();
     });
@@ -116,34 +200,40 @@
         
         if (textVisible) {
             const elapsed = now - triggerTime;
+            
+            // I increased fade speed (0.05) so it's fully visible 
+            // before it starts falling
+            if (opacity < 1) opacity += 0.05;
 
-            // Fade in the text over 0.5 seconds
-            if (opacity < 1) opacity += 0.02;
-
-            // Trigger gravity AFTER 0.3 seconds (300ms) of being visible
-            if (elapsed > 300) {
-                animationStarted = true;
-                const dropElapsed = elapsed - 300;
+            // --- 600ms WAIT LOGIC ---
+            // The text sits static for 600ms before entering the drop logic
+            if (elapsed > 600) {
+                // We subtract the 250ms so the drop sequence starts fresh from 0
+                const dropElapsed = elapsed - 600;
 
                 letters.forEach(l => {
                     if (!l.released) {
-                        const dropDelay = (startY + 150 - l.originalY) * 20 + Math.random() * 800;
-                        if (dropElapsed > dropDelay) {
+                        const sequenceDelay = lineDelays[l.lineIdx];
+                        const distFromCenter = Math.abs(l.body.position.x - width / 2);
+                        const vShapeDelay = distFromCenter * 8; 
+
+                        if (dropElapsed > sequenceDelay + vShapeDelay) {
                             l.released = true;
                             Body.setStatic(l.body, false);
+                            Body.setAngularVelocity(l.body, Common.random(-0.02, 0.02));
+                        }
+                    }
+
+                    if (l.released && !l.isLanded) {
+                        if (l.body.speed < 0.2 && l.body.position.y > height - 100) {
+                            l.isLanded = true;
+                            l.body.collisionFilter.category = c_landed;
+                            l.body.collisionFilter.mask = c_default | c_falling | c_landed;
                         }
                     }
                 });
             }
         }
-
-        // FUNNEL FORCE: Pull to center
-        letters.forEach(l => {
-            if (l.released && l.body.position.y < height * 0.7) {
-                const centerPull = (width / 2 - l.body.position.x) * 0.00004;
-                Body.applyForce(l.body, l.body.position, { x: centerPull, y: 0.0001 });
-            }
-        });
 
         Engine.update(engine);
         draw();
@@ -157,12 +247,16 @@
         if (textVisible) {
             ctx.fillStyle = `rgba(51, 51, 51, ${opacity})`;
             ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
 
             letters.forEach(l => {
                 const { x, y } = l.body.position;
+                const angle = l.body.angle;
+                
                 ctx.save();
                 ctx.translate(x, y);
-                ctx.rotate(l.body.angle);
+                ctx.rotate(angle);
+                ctx.font = `${l.fontSize}px 'Courier New'`;
                 ctx.fillText(l.char, 0, 0);
                 ctx.restore();
             });
