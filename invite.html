@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Wedding Invitation - Click to Open</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #f0eee6; 
+            display: flex; 
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            font-family: 'Courier New', Courier, monospace;
+        }
+        #ui-container {
+            position: absolute;
+            z-index: 10;
+        }
+        button {
+            padding: 12px 24px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            background: transparent;
+            border: 1px solid #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 2px;
+            color: #333;
+        }
+        button:hover {
+            background-color: #333;
+            color: #f0eee6;
+        }
+        canvas { 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            background-color: #f0eee6;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-container">
+        <button id="openBtn">OPEN INVITATION</button>
+    </div>
+
+<script>
+    const { Engine, World, Bodies, Body } = Matter;
+
+    const width = 600;
+    const height = 800;
+    const quote = [
+        "Love bears all things, believes all things,",
+        "hopes all things, endures all things.",
+        "Love Never Ends.",
+        "Love Never Fails."
+    ];
+
+    const engine = Engine.create();
+    const world = engine.world;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = width;
+    canvas.height = height;
+    document.body.appendChild(canvas);
+
+    // Physics Boundaries
+    const ground = Bodies.rectangle(width / 2, height - 20, width, 40, { isStatic: true });
+    const funnelL = Bodies.rectangle(width * 0.35, height * 0.75, 400, 10, { isStatic: true, angle: Math.PI / 3, friction: 0 });
+    const funnelR = Bodies.rectangle(width * 0.65, height * 0.75, 400, 10, { isStatic: true, angle: -Math.PI / 3, friction: 0 });
+    World.add(world, [ground, funnelL, funnelR]);
+
+    let letters = [];
+    const startY = 250;
+    let textVisible = false;
+    let animationStarted = false;
+    let triggerTime = 0;
+    let opacity = 0;
+
+    // Build the text block
+    ctx.font = "18px 'Courier New'";
+    quote.forEach((line, lineIdx) => {
+        const chars = line.split('');
+        const xOffset = (width / 2) - (chars.length * 11 / 2);
+        chars.forEach((char, charIdx) => {
+            if (char === " ") return;
+            const x = xOffset + (charIdx * 11);
+            const y = startY + (lineIdx * 35);
+
+            const b = Bodies.rectangle(x, y, 10, 16, {
+                isStatic: true,
+                restitution: 0,
+                friction: 1.0,
+                frictionStatic: 1.5,
+                frictionAir: 0.1 
+            });
+
+            letters.push({ body: b, char: char, originalY: y, released: false });
+            World.add(world, b);
+        });
+    });
+
+    // BUTTON TRIGGER
+    document.getElementById('openBtn').addEventListener('click', function() {
+        this.style.display = 'none'; // Hide button
+        textVisible = true;
+        triggerTime = Date.now();
+    });
+
+    function update() {
+        const now = Date.now();
+        
+        if (textVisible) {
+            const elapsed = now - triggerTime;
+
+            // Fade in the text over 0.5 seconds
+            if (opacity < 1) opacity += 0.02;
+
+            // Trigger gravity AFTER 0.3 seconds (300ms) of being visible
+            if (elapsed > 300) {
+                animationStarted = true;
+                const dropElapsed = elapsed - 300;
+
+                letters.forEach(l => {
+                    if (!l.released) {
+                        const dropDelay = (startY + 150 - l.originalY) * 20 + Math.random() * 800;
+                        if (dropElapsed > dropDelay) {
+                            l.released = true;
+                            Body.setStatic(l.body, false);
+                        }
+                    }
+                });
+            }
+        }
+
+        // FUNNEL FORCE: Pull to center
+        letters.forEach(l => {
+            if (l.released && l.body.position.y < height * 0.7) {
+                const centerPull = (width / 2 - l.body.position.x) * 0.00004;
+                Body.applyForce(l.body, l.body.position, { x: centerPull, y: 0.0001 });
+            }
+        });
+
+        Engine.update(engine);
+        draw();
+        requestAnimationFrame(update);
+    }
+
+    function draw() {
+        ctx.fillStyle = "#f0eee6";
+        ctx.fillRect(0, 0, width, height);
+        
+        if (textVisible) {
+            ctx.fillStyle = `rgba(51, 51, 51, ${opacity})`;
+            ctx.textAlign = "center";
+
+            letters.forEach(l => {
+                const { x, y } = l.body.position;
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(l.body.angle);
+                ctx.fillText(l.char, 0, 0);
+                ctx.restore();
+            });
+        }
+    }
+
+    update();
+</script>
+</body>
+</html>
