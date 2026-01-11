@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Wedding Invitation</title>
+    <title>Will&Zoey Wedding Invitation</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         body { 
@@ -18,9 +18,11 @@
             font-family: 'Courier New', Courier, monospace;
             touch-action: none; 
         }
+
+        /* --- UI CONTAINER (BUTTON) --- */
         #ui-container {
             position: absolute;
-            z-index: 10;
+            z-index: 20; /* Higher than card so button is clickable */
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -42,6 +44,75 @@
             background-color: #333;
             color: #f0eee6;
         }
+
+        /* --- INVITATION CARD (YOUR CSS) --- */
+        #invitation-card {
+            position: absolute;
+            z-index: 10;
+            text-align: center;
+            color: #4a4a4a;
+            font-family: 'Times New Roman', Times, serif; 
+            opacity: 0; /* Hidden initially */
+            transition: opacity 2s ease-in-out;
+            width: 100%;
+            max-width: 500px;
+            
+            /* Positioning logic to center it but keep it above the pile */
+            top: 45%; 
+            left: 50%;
+            transform: translate(-50%, -50%);
+            
+            /* CRITICAL: Allows mouse to pass through text to drag blocks */
+            pointer-events: none; 
+        }
+
+        .fade-in {
+            opacity: 1 !important;
+        }
+
+        h1 {
+            font-size: 18px;
+            letter-spacing: 3px;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            font-weight: normal;
+        }
+
+        .names {
+            margin-bottom: 20px;
+        }
+        .names h2 {
+            font-size: 24px;
+            margin: 5px 0;
+            font-weight: normal;
+            letter-spacing: 2px;
+        }
+        .names .cn {
+            font-size: 18px;
+            opacity: 0.8;
+        }
+
+        .date {
+            font-size: 16px;
+            letter-spacing: 2px;
+            margin-bottom: 50px;
+            border-bottom: 1px solid #ccc;
+            display: inline-block;
+            padding-bottom: 10px;
+        }
+
+        .schedule {
+            font-size: 13px;
+            line-height: 2.2;
+            letter-spacing: 1px;
+            color: #666;
+        }
+        .schedule .time {
+            margin-right: 15px;
+            font-weight: bold;
+            color: #333;
+        }
+
         canvas { 
             background-color: #f0eee6;
             display: block;
@@ -52,6 +123,24 @@
 
     <div id="ui-container">
         <button id="openBtn">Open Invitation</button>
+    </div>
+
+    <div id="invitation-card">
+        <h1>Invitation</h1>
+        
+        <div class="names">
+            <div class="cn">张 维 翀 & 叶 子</div>
+            <h2>Will & Zoey</h2>
+        </div>
+
+        <div class="date">2026.09.12</div>
+
+        <div class="schedule">
+            <div>Schedule</div>
+            <div><span class="time">18:00</span> Sign in / 签到</div>
+            <div><span class="time">19:00</span> Ceremony / 仪式</div>
+            <div><span class="time">20:00</span> Dinner & Party / 晚宴</div>
+        </div>
     </div>
 
 <script>
@@ -76,12 +165,14 @@
     const c_falling = 0x0002; 
     const c_landed  = 0x0004; 
 
+    // Ground
     let ground = Bodies.rectangle(width / 2, height + 30, width, 100, { 
         isStatic: true,
         collisionFilter: { category: c_default }
     });
     World.add(world, [ground]);
 
+    // Mouse Interaction
     const mouse = Mouse.create(canvas);
     const mouseConstraint = MouseConstraint.create(engine, {
         mouse: mouse,
@@ -102,6 +193,9 @@
     let textVisible = false;
     let triggerTime = 0;
     let opacity = 0;
+    
+    // Flag to ensure card only shows once
+    let cardShown = false; 
 
     function initLetters() {
         letters.forEach(l => World.remove(world, l.body));
@@ -160,10 +254,15 @@
 
     const lineDelays = {}; 
     let accumulatedDelay = 0;
+    // Calculate delays and total duration
     for (let i = quote.length - 1; i >= 0; i--) {
         lineDelays[i] = accumulatedDelay;
         accumulatedDelay += (1200 + (quote[i].length * 30)); 
     }
+    
+    // Calculate total time until the last letter is released
+    // 'accumulatedDelay' is roughly the total time needed to release everything
+    const totalReleaseTime = accumulatedDelay;
 
     window.addEventListener('resize', () => {
         width = window.innerWidth;
@@ -184,13 +283,9 @@
         }
     });
 
-    // --- REVERTED CLICK LISTENER ---
-    // Text appears immediately now
     document.getElementById('openBtn').addEventListener('click', function() {
         this.style.opacity = '0';
         setTimeout(() => this.style.display = 'none', 500);
-        
-        // Show text immediately
         textVisible = true;
         triggerTime = Date.now();
     });
@@ -201,15 +296,19 @@
         if (textVisible) {
             const elapsed = now - triggerTime;
             
-            // I increased fade speed (0.05) so it's fully visible 
-            // before it starts falling
             if (opacity < 1) opacity += 0.05;
 
-            // --- 600ms WAIT LOGIC ---
-            // The text sits static for 600ms before entering the drop logic
-            if (elapsed > 600) {
-                // We subtract the 250ms so the drop sequence starts fresh from 0
-                const dropElapsed = elapsed - 600;
+            // Wait 800ms before physics logic starts
+            if (elapsed > 800) {
+                const dropElapsed = elapsed - 800;
+
+                // --- CHECK FOR CARD DISPLAY ---
+                // If we haven't shown the card yet, and time has passed:
+                // Total Release Time + 300ms buffer for falling/settling
+                if (!cardShown && dropElapsed > totalReleaseTime + 300) {
+                    document.getElementById('invitation-card').classList.add('fade-in');
+                    cardShown = true;
+                }
 
                 letters.forEach(l => {
                     if (!l.released) {
