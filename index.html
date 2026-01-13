@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Will&Zoey Wedding Invitation</title>
+    <title>Will & Zoey - Home</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         body { 
@@ -19,10 +19,81 @@
             touch-action: none; 
         }
 
+        /* --- NAVIGATION --- */
+        nav {
+            position: absolute;
+            top: 40px;
+            right: 80px; /* Requested padding */
+            z-index: 100;
+        }
+
+        .nav-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            gap: 40px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-size: 16px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #666;
+        }
+
+        /* Selected State (Underscore) */
+        .nav-links a.active {
+            border-bottom: 2px solid #333;
+            padding-bottom: 5px;
+        }
+
+        /* Mobile Menu Icon */
+        .menu-icon {
+            display: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #333;
+            user-select: none;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            nav {
+                right: 20px; /* Adjusted slightly for small screens, or keep 80px if strict */
+            }
+            .menu-icon {
+                display: block;
+            }
+            .nav-links {
+                display: none; /* Hidden by default on mobile */
+                flex-direction: column;
+                position: absolute;
+                right: 0;
+                top: 30px;
+                background-color: rgba(240, 238, 230, 0.95);
+                border: 1px solid #333;
+                padding: 20px;
+                width: 120px;
+                text-align: right;
+                gap: 20px;
+            }
+            .nav-links.show {
+                display: flex;
+            }
+        }
+
         /* --- UI CONTAINER (BUTTON) --- */
         #ui-container {
             position: absolute;
-            z-index: 20; /* Higher than card so button is clickable */
+            z-index: 20; 
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -45,81 +116,45 @@
             color: #f0eee6;
         }
 
-        /* --- INVITATION CARD (YOUR CSS) --- */
+        /* --- INVITATION CARD --- */
         #invitation-card {
             position: absolute;
             z-index: 10;
             text-align: center;
             color: #4a4a4a;
             font-family: 'Times New Roman', Times, serif; 
-            opacity: 0; /* Hidden initially */
+            opacity: 0; 
             transition: opacity 2s ease-in-out;
             width: 100%;
             max-width: 500px;
-            
-            /* Positioning logic to center it but keep it above the pile */
             top: 45%; 
             left: 50%;
             transform: translate(-50%, -50%);
-            
-            /* CRITICAL: Allows mouse to pass through text to drag blocks */
             pointer-events: none; 
         }
 
-        .fade-in {
-            opacity: 1 !important;
-        }
+        .fade-in { opacity: 1 !important; }
 
-        h1 {
-            font-size: 18px;
-            letter-spacing: 3px;
-            margin-bottom: 40px;
-            text-transform: uppercase;
-            font-weight: normal;
-        }
-
-        .names {
-            margin-bottom: 20px;
-        }
-        .names h2 {
-            font-size: 24px;
-            margin: 5px 0;
-            font-weight: normal;
-            letter-spacing: 2px;
-        }
-        .names .cn {
-            font-size: 18px;
-            opacity: 0.8;
-        }
-
-        .date {
-            font-size: 16px;
-            letter-spacing: 2px;
-            margin-bottom: 50px;
-            border-bottom: 1px solid #ccc;
-            display: inline-block;
-            padding-bottom: 10px;
-        }
-
-        .schedule {
-            font-size: 13px;
-            line-height: 2.2;
-            letter-spacing: 1px;
-            color: #666;
-        }
-        .schedule .time {
-            margin-right: 15px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        canvas { 
-            background-color: #f0eee6;
-            display: block;
-        }
+        h1 { font-size: 18px; letter-spacing: 3px; margin-bottom: 40px; text-transform: uppercase; font-weight: normal; }
+        .names { margin-bottom: 20px; }
+        .names h2 { font-size: 24px; margin: 5px 0; font-weight: normal; letter-spacing: 2px; }
+        .names .cn { font-size: 18px; opacity: 0.8; }
+        .date { font-size: 16px; letter-spacing: 2px; margin-bottom: 50px; border-bottom: 1px solid #ccc; display: inline-block; padding-bottom: 10px; }
+        .schedule { font-size: 13px; line-height: 2.2; letter-spacing: 1px; color: #666; }
+        .schedule .time { margin-right: 15px; font-weight: bold; color: #333; }
+        canvas { background-color: #f0eee6; display: block; }
     </style>
 </head>
 <body>
+
+    <nav>
+        <div class="menu-icon" onclick="toggleMenu()">☰</div>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="index.html" class="active">主页</a></li>
+            <li><a href="attire.html">着装</a></li>
+            <li><a href="address.html">地址</a></li>
+        </ul>
+    </nav>
 
     <div id="ui-container">
         <button id="openBtn">Open Invitation</button>
@@ -127,14 +162,11 @@
 
     <div id="invitation-card">
         <h1>Invitation</h1>
-        
         <div class="names">
             <div class="cn">张 维 翀 & 叶 子</div>
             <h2>Will & Zoey</h2>
         </div>
-
         <div class="date">2026.09.12</div>
-
         <div class="schedule">
             <div>Schedule</div>
             <div><span class="time">18:00</span> Sign in / 签到</div>
@@ -144,6 +176,13 @@
     </div>
 
 <script>
+    // --- NAVIGATION LOGIC ---
+    function toggleMenu() {
+        const navLinks = document.getElementById('navLinks');
+        navLinks.classList.toggle('show');
+    }
+
+    // --- MATTER.JS LOGIC (Original Code) ---
     const { Engine, World, Bodies, Body, Common, Mouse, MouseConstraint } = Matter;
 
     let width = window.innerWidth;
@@ -165,14 +204,12 @@
     const c_falling = 0x0002; 
     const c_landed  = 0x0004; 
 
-    // Ground
     let ground = Bodies.rectangle(width / 2, height + 30, width, 100, { 
         isStatic: true,
         collisionFilter: { category: c_default }
     });
     World.add(world, [ground]);
 
-    // Mouse Interaction
     const mouse = Mouse.create(canvas);
     const mouseConstraint = MouseConstraint.create(engine, {
         mouse: mouse,
@@ -193,8 +230,6 @@
     let textVisible = false;
     let triggerTime = 0;
     let opacity = 0;
-    
-    // Flag to ensure card only shows once
     let cardShown = false; 
 
     function initLetters() {
@@ -254,14 +289,11 @@
 
     const lineDelays = {}; 
     let accumulatedDelay = 0;
-    // Calculate delays and total duration
     for (let i = quote.length - 1; i >= 0; i--) {
         lineDelays[i] = accumulatedDelay;
         accumulatedDelay += (1200 + (quote[i].length * 30)); 
     }
     
-    // Calculate total time until the last letter is released
-    // 'accumulatedDelay' is roughly the total time needed to release everything
     const totalReleaseTime = accumulatedDelay;
 
     window.addEventListener('resize', () => {
@@ -292,24 +324,15 @@
 
     function update() {
         const now = Date.now();
-        
         if (textVisible) {
             const elapsed = now - triggerTime;
-            
             if (opacity < 1) opacity += 0.05;
-
-            // Wait 2500ms before physics logic starts
             if (elapsed > 2500) {
                 const dropElapsed = elapsed - 2500;
-
-                // --- CHECK FOR CARD DISPLAY ---
-                // If we haven't shown the card yet, and time has passed:
-                // Total Release Time + 300ms buffer for falling/settling
                 if (!cardShown && dropElapsed > totalReleaseTime + 300) {
                     document.getElementById('invitation-card').classList.add('fade-in');
                     cardShown = true;
                 }
-
                 letters.forEach(l => {
                     if (!l.released) {
                         const sequenceDelay = lineDelays[l.lineIdx];
@@ -322,7 +345,6 @@
                             Body.setAngularVelocity(l.body, Common.random(-0.02, 0.02));
                         }
                     }
-
                     if (l.released && !l.isLanded) {
                         if (l.body.speed < 0.2 && l.body.position.y > height - 100) {
                             l.isLanded = true;
@@ -333,7 +355,6 @@
                 });
             }
         }
-
         Engine.update(engine);
         draw();
         requestAnimationFrame(update);
@@ -342,16 +363,13 @@
     function draw() {
         ctx.fillStyle = "#f0eee6";
         ctx.fillRect(0, 0, width, height);
-        
         if (textVisible) {
             ctx.fillStyle = `rgba(51, 51, 51, ${opacity})`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-
             letters.forEach(l => {
                 const { x, y } = l.body.position;
                 const angle = l.body.angle;
-                
                 ctx.save();
                 ctx.translate(x, y);
                 ctx.rotate(angle);
@@ -361,7 +379,6 @@
             });
         }
     }
-
     update();
 </script>
 </body>
