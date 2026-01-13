@@ -183,10 +183,10 @@
     mouse.element.removeEventListener("DOMMouseScroll", mouse.mousewheel);
 
     const quote = [
-        "Love bears all things, believes all things,",
-        "hopes all things, endures all things.",
-        "Love Never Ends.",
-        "Love Never Fails."
+        "For one human being to love another",
+        "is perhaps the most difficult of all our tasks.",
+        "The work for which all other work is but preparation.",
+        "We have arrived.",
     ];
 
     let letters = [];
@@ -298,9 +298,9 @@
             
             if (opacity < 1) opacity += 0.05;
 
-            // Wait 800ms before physics logic starts
-            if (elapsed > 800) {
-                const dropElapsed = elapsed - 800;
+            // Wait 2500ms before physics logic starts
+            if (elapsed > 2500) {
+                const dropElapsed = elapsed - 2500;
 
                 // --- CHECK FOR CARD DISPLAY ---
                 // If we haven't shown the card yet, and time has passed:
