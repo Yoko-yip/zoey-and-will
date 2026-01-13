@@ -196,10 +196,22 @@
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = width;
-    canvas.height = height;
+    
+    // Get the device pixel ratio (1 for standard, 2 or 3 for Retina/Phones)
+    const dpr = window.devicePixelRatio || 1;
+    
+    // Set actual render size (multiplied by dpr)
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    
+    // Set display size (CSS) to logical pixels
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    
+    // Scale all drawing operations by dpr so logic remains the same
+    ctx.scale(dpr, dpr);
+    
     document.body.appendChild(canvas);
-
     const c_default = 0x0001; 
     const c_falling = 0x0002; 
     const c_landed  = 0x0004; 
@@ -299,8 +311,14 @@
     window.addEventListener('resize', () => {
         width = window.innerWidth;
         height = window.innerHeight;
-        canvas.width = width;
-        canvas.height = height;
+        
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        ctx.scale(dpr, dpr); // crucial to re-apply scale after resize
+        // ----------------------------
 
         Body.setPosition(ground, { x: width / 2, y: height + 30 });
         Body.setVertices(ground, [
