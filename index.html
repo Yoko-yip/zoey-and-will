@@ -14,26 +14,35 @@
             touch-action: pan-y; 
         }
 
-        /* --- BACKGROUND POEM (NEW) --- */
+        /* --- BACKGROUND POEM (UPDATED) --- */
         #bg-poem {
             position: fixed;
-            top: 50%;
+            /* 改为 30% 或 35%，让它位于屏幕偏上方，刚好在英文动画上面 */
+            top: 30%; 
             left: 50%;
             transform: translate(-50%, -50%);
             width: 80%;
             text-align: center;
             color: #333;
-            opacity: 0.6; /* 60% Transparency as requested */
-            font-size: 16px; /* Adjust size as needed */
+            
+            /* 初始状态设为不可见 */
+            opacity: 0; 
+            
+            font-size: 16px; 
             line-height: 2;
-            z-index: 0; /* Behind the canvas */
+            z-index: 0; 
             pointer-events: none;
-            transition: opacity 2s ease-in-out;
-            font-family: 'Times New Roman', serif; /* Optional: different font for contrast */
+            transition: opacity 1.5s ease-in-out; /* 稍微调快一点渐变 */
+            font-family: 'Times New Roman', serif;
+        }
+        
+        /* 新增一个类，用于显示诗句 */
+        #bg-poem.visible {
+            opacity: 0.6; /* 显示时的透明度 */
         }
         
         #bg-poem.fade-out {
-            opacity: 0;
+            opacity: 0 !important;
         }
 
         /* --- NAVIGATION --- */
@@ -171,10 +180,41 @@
         .fade-in { opacity: 1 !important; }
 
         /* Shared Card Styles */
-        h1 { font-size: 18px; letter-spacing: 3px; margin-bottom: 40px; text-transform: uppercase; font-weight: normal; }
+        /* Main Title (Chinese) */
+        h1 { 
+            font-size: 24px; /* Larger for Main Headline */
+            letter-spacing: 5px; 
+            margin-bottom: 5px; /* Small gap between Title 1 & 2 */
+            text-transform: uppercase; 
+            font-weight: normal; 
+        }
+
+        /* Sub Title (English) */
+        .sub-title {
+            font-size: 14px;
+            letter-spacing: 3px;
+            color: #666;
+            margin-bottom: 40px; /* Spacing before names */
+            text-transform: uppercase;
+        }
+
         .names { margin-bottom: 20px; }
-        .names h2 { font-size: 24px; margin: 5px 0; font-weight: normal; letter-spacing: 2px; }
-        .names .cn { font-size: 18px; opacity: 0.8; }
+
+        /* Names Headline 1 (Chinese - Big) */
+        .names h2 { 
+            font-size: 28px; 
+            margin: 5px 0; 
+            font-weight: normal; 
+            letter-spacing: 3px; 
+        }
+
+        /* Names Headline 2 (English - Small) */
+        .names .en { 
+            font-size: 16px; 
+            opacity: 0.8; 
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
         .date { font-size: 16px; letter-spacing: 2px; margin-bottom: 50px; border-bottom: 1px solid #ccc; display: inline-block; padding-bottom: 10px; }
         .schedule { font-size: 13px; line-height: 2.2; letter-spacing: 1px; color: #666; }
         .schedule .time { margin-right: 15px; font-weight: bold; color: #333; }
@@ -239,10 +279,12 @@
             <button id="openBtn">Open Invitation</button>
         </div>
         <div id="invitation-card">
-            <h1>Invitation</h1>
+            <h1>婚礼邀请</h1>
+            <div class="sub-title">Invitation</div>
+
             <div class="names">
-                <div class="cn">张 维 翀 & 叶 子</div>
-                <h2>Will & Zoey</h2>
+                <h2>叶 子 & 张 维 翀</h2>
+                <div class="en">Zoey & Will</div>
             </div>
             <div class="date">2026.09.12</div>
             <div class="schedule">
@@ -326,7 +368,14 @@
     document.getElementById('openBtn').addEventListener('click', function() {
         this.style.opacity = '0';
         setTimeout(() => this.style.display = 'none', 500);
+        
+        // --- 播放音乐 ---
         bgMusic.play().catch(e => console.log("Autoplay blocked:", e));
+        
+        // --- 新增: 点击按钮后，显示中文诗句 ---
+        // 这样它就会和掉落的文字动画一起出现
+        document.getElementById('bg-poem').classList.add('visible');
+
         textVisible = true;
         triggerTime = Date.now();
     });
