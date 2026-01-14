@@ -3,39 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Will & Zoey - Home</title>
+    <title>Will & Zoey</title>
     <script src="matter.min.js"></script>
     <style>
         body { 
             margin: 0; 
-            overflow: hidden; 
+            /* Allow scrolling for content pages, but hide overflow for home animation */
+            overflow-x: hidden; 
             background-color: #f0eee6; 
-            display: flex; 
-            flex-direction: column;
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
             font-family: 'Courier New', Courier, monospace;
-            touch-action: none; 
+            touch-action: pan-y; /* Allow vertical scrolling */
         }
 
         /* --- NAVIGATION --- */
         nav {
-            position: absolute;
+            position: fixed; /* Fixed so it stays visible when scrolling */
             top: 40px;
             right: 80px; 
-            z-index: 100;
-            
-            /* HIDDEN INITIALLY */
+            z-index: 200; /* Highest priority */
             opacity: 0; 
             pointer-events: none; 
             transition: opacity 2s ease-in-out;
         }
 
-        nav.fade-in {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        nav.fade-in { opacity: 1; pointer-events: auto; }
 
         .nav-links {
             list-style: none;
@@ -52,13 +43,15 @@
             letter-spacing: 2px;
             text-transform: uppercase;
             position: relative;
+            cursor: pointer;
             transition: color 0.3s;
         }
 
         .nav-links a:hover { color: #666; }
+        
+        /* The Active Underscore */
         .nav-links a.active { border-bottom: 2px solid #333; padding-bottom: 5px; }
 
-        /* Mobile Menu Icon */
         .menu-icon {
             display: none;
             font-size: 28px;
@@ -69,36 +62,14 @@
             z-index: 300; 
         }
 
-        /* --- MUTE BUTTON --- */
-        #muteBtn {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 100;
-            font-size: 24px;
-            cursor: pointer;
-            color: #333;
-            opacity: 0; /* Hidden initially */
-            transition: opacity 2s ease-in-out;
-            background: none;
-            border: none;
-            padding: 10px;
-        }
-        #muteBtn.fade-in { opacity: 0.7; }
-        #muteBtn:hover { opacity: 1; }
-
-        /* --- MOBILE FULL SCREEN MENU --- */
+        /* --- MOBILE MENU --- */
         @media (max-width: 768px) {
             nav { right: 20px; }
             .menu-icon { display: block; }
-            
             .nav-links {
                 display: none; 
                 position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
+                top: 0; left: 0; width: 100vw; height: 100vh;
                 background-color: #f0eee6; 
                 flex-direction: column;
                 justify-content: center;
@@ -106,26 +77,40 @@
                 gap: 50px; 
                 z-index: 200; 
             }
-
-            .nav-links.show {
-                display: flex;
-                animation: fadeInMenu 0.3s ease-in-out;
-            }
-
+            .nav-links.show { display: flex; animation: fadeInMenu 0.3s ease-in-out; }
             .nav-links a { font-size: 24px; }
         }
+        @keyframes fadeInMenu { from { opacity: 0; } to { opacity: 1; } }
 
-        @keyframes fadeInMenu {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        /* --- MUTE BUTTON --- */
+        #muteBtn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 200;
+            font-size: 24px;
+            cursor: pointer;
+            color: #333;
+            opacity: 0; 
+            transition: opacity 2s ease-in-out;
+            background: none; border: none; padding: 10px;
         }
+        #muteBtn.fade-in { opacity: 0.7; }
+        #muteBtn:hover { opacity: 1; }
 
-        /* --- UI CONTAINER (BUTTON) --- */
+        /* --- HOME SECTION (Animation) --- */
+        #home-page {
+            position: fixed; /* Fixed to prevent scrolling on home */
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+        }
+        
+        canvas { display: block; }
+
         #ui-container {
             position: absolute;
             z-index: 20; 
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
         }
         button {
@@ -141,12 +126,8 @@
             text-transform: uppercase;
             backdrop-filter: blur(2px);
         }
-        button:hover {
-            background-color: #333;
-            color: #f0eee6;
-        }
+        button:hover { background-color: #333; color: #f0eee6; }
 
-        /* --- INVITATION CARD --- */
         #invitation-card {
             position: absolute;
             z-index: 10;
@@ -155,16 +136,14 @@
             font-family: 'Times New Roman', Times, serif; 
             opacity: 0; 
             transition: opacity 2s ease-in-out;
-            width: 100%;
-            max-width: 500px;
-            top: 45%; 
-            left: 50%;
+            width: 100%; max-width: 500px;
+            top: 45%; left: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none; 
         }
-
         .fade-in { opacity: 1 !important; }
 
+        /* Shared Card Styles */
         h1 { font-size: 18px; letter-spacing: 3px; margin-bottom: 40px; text-transform: uppercase; font-weight: normal; }
         .names { margin-bottom: 20px; }
         .names h2 { font-size: 24px; margin: 5px 0; font-weight: normal; letter-spacing: 2px; }
@@ -172,7 +151,51 @@
         .date { font-size: 16px; letter-spacing: 2px; margin-bottom: 50px; border-bottom: 1px solid #ccc; display: inline-block; padding-bottom: 10px; }
         .schedule { font-size: 13px; line-height: 2.2; letter-spacing: 1px; color: #666; }
         .schedule .time { margin-right: 15px; font-weight: bold; color: #333; }
-        canvas { background-color: #f0eee6; display: block; }
+
+        /* --- CONTENT PAGES (Attire & Address) --- */
+        .content-page {
+            display: none; /* Hidden by default */
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            min-height: 100vh;
+            background-color: #f0eee6; /* Solid background to cover animation */
+            z-index: 100; /* Sit on top of Home */
+            box-sizing: border-box;
+            padding-top: 150px; /* Clear the nav bar */
+            padding-bottom: 50px;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .content-page.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Attire Page Specifics */
+        .figures-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            width: 90%;
+            max-width: 1000px;
+        }
+        .figure { flex: 1; min-width: 250px; text-align: center; margin-bottom: 30px; }
+        .figure img { width: 100%; height: auto; border: 1px solid #ccc; background-color: #e0e0e0; margin-bottom: 15px; }
+        .figure-caption { font-size: 14px; letter-spacing: 1px; color: #555; }
+
+        /* Address Page Specifics */
+        .address-container { width: 90%; max-width: 800px; text-align: left; }
+        .map-figure { width: 100%; margin-bottom: 50px; border: 1px solid #ccc; }
+        .map-figure img { width: 100%; height: auto; display: block; background-color: #ddd; }
+        .info-section { margin-bottom: 40px; border-left: 2px solid #333; padding-left: 20px; }
+        .info-section h2 { font-size: 20px; text-transform: uppercase; letter-spacing: 3px; margin: 0 0 10px 0; font-weight: bold; }
+        .info-section p { font-size: 14px; line-height: 1.6; color: #555; margin: 0; }
+
     </style>
 </head>
 <body>
@@ -186,66 +209,131 @@
     <nav>
         <div class="menu-icon" onclick="toggleMenu()">☰</div>
         <ul class="nav-links" id="navLinks">
-            <li><a href="index.html" class="active">主页</a></li>
-            <li><a href="attire.html">着装</a></li>
-            <li><a href="address.html">地址</a></li>
+            <li><a onclick="showPage('home')" id="link-home" class="active">主页</a></li>
+            <li><a onclick="showPage('attire')" id="link-attire">着装</a></li>
+            <li><a onclick="showPage('address')" id="link-address">地址</a></li>
         </ul>
     </nav>
 
-    <div id="ui-container">
-        <button id="openBtn">Open Invitation</button>
+    <div id="home-page">
+        <div id="ui-container">
+            <button id="openBtn">Open Invitation</button>
+        </div>
+        <div id="invitation-card">
+            <h1>Invitation</h1>
+            <div class="names">
+                <div class="cn">张 维 翀 & 叶 子</div>
+                <h2>Will & Zoey</h2>
+            </div>
+            <div class="date">2026.09.12</div>
+            <div class="schedule">
+                <div>Schedule</div>
+                <div><span class="time">18:00</span> Sign in / 签到</div>
+                <div><span class="time">19:00</span> Ceremony / 仪式</div>
+                <div><span class="time">20:00</span> Dinner & Party / 晚宴</div>
+            </div>
+        </div>
     </div>
 
-    <div id="invitation-card">
-        <h1>Invitation</h1>
-        <div class="names">
-            <div class="cn">张 维 翀 & 叶 子</div>
-            <h2>Will & Zoey</h2>
+    <div id="attire-page" class="content-page">
+        <h1>Dress Code</h1>
+        <div class="figures-container">
+            <div class="figure">
+                <img src="https://placehold.co/300x400/ccc/999?text=Look+1" alt="Style 1">
+                <div class="figure-caption">Formal</div>
+            </div>
+            <div class="figure">
+                <img src="https://placehold.co/300x400/ccc/999?text=Look+2" alt="Style 2">
+                <div class="figure-caption">Semi-Formal</div>
+            </div>
+            <div class="figure">
+                <img src="https://placehold.co/300x400/ccc/999?text=Look+3" alt="Style 3">
+                <div class="figure-caption">Casual Chic</div>
+            </div>
         </div>
-        <div class="date">2026.09.12</div>
-        <div class="schedule">
-            <div>Schedule</div>
-            <div><span class="time">18:00</span> Sign in / 签到</div>
-            <div><span class="time">19:00</span> Ceremony / 仪式</div>
-            <div><span class="time">20:00</span> Dinner & Party / 晚宴</div>
+    </div>
+
+    <div id="address-page" class="content-page">
+        <div class="address-container">
+            <h1>Location</h1>
+            <div class="map-figure">
+                <img src="https://placehold.co/800x400/ccc/999?text=Map+Location" alt="Event Location Map">
+            </div>
+            <div class="info-section">
+                <h2>The Venue</h2>
+                <p>The ceremony will be held at the Grand Hall. Please arrive through the main gate and follow the signs to the garden area.</p>
+            </div>
+            <div class="info-section">
+                <h2>Transportation</h2>
+                <p>Shuttle buses will be available from the city center at 17:00. Parking is also available on-site for those who prefer to drive.</p>
+            </div>
+            <div class="info-section">
+                <h2>Accommodation</h2>
+                <p>We have reserved a block of rooms at the nearby Hotel Lux. Please mention the wedding code when booking your stay.</p>
+            </div>
         </div>
     </div>
 
 <script>
-    // --- NAVIGATION LOGIC ---
-    function toggleMenu() {
+    // --- NAVIGATION LOGIC (THE FIX) ---
+    function showPage(pageId) {
+        // 1. Update Navigation Links (Underscore)
+        document.querySelectorAll('.nav-links a').forEach(link => link.classList.remove('active'));
+        document.getElementById(`link-${pageId}`).classList.add('active');
+
+        // 2. Hide Mobile Menu if open
         const navLinks = document.getElementById('navLinks');
-        const menuIcon = document.querySelector('.menu-icon');
-        
-        navLinks.classList.toggle('show');
-        
         if (navLinks.classList.contains('show')) {
-            menuIcon.textContent = '✕';
+            toggleMenu();
+        }
+
+        // 3. Switch Pages
+        // Hide all content pages first
+        document.querySelectorAll('.content-page').forEach(page => page.classList.remove('active'));
+
+        if (pageId === 'home') {
+            // Home is special: it's underneath everything, so we just hide the overlays
+            // We don't need to do anything else because the overlays are gone
         } else {
-            menuIcon.textContent = '☰';
+            // Show the specific overlay page
+            // Small timeout to allow display:flex to apply before opacity transition
+            const target = document.getElementById(`${pageId}-page`);
+            target.classList.add('active');
         }
     }
 
-    // --- MUTE BUTTON LOGIC ---
+    function toggleMenu() {
+        const navLinks = document.getElementById('navLinks');
+        const menuIcon = document.querySelector('.menu-icon');
+        navLinks.classList.toggle('show');
+        menuIcon.textContent = navLinks.classList.contains('show') ? '✕' : '☰';
+    }
+
+    // --- AUDIO & UI LOGIC ---
     const bgMusic = document.getElementById('bgMusic');
     const muteBtn = document.getElementById('muteBtn');
 
     muteBtn.addEventListener('click', () => {
-        if (bgMusic.muted) {
-            bgMusic.muted = false;
-            muteBtn.textContent = '🔊'; // Sound On Icon
-        } else {
-            bgMusic.muted = true;
-            muteBtn.textContent = '🔇'; // Mute Icon
-        }
+        bgMusic.muted = !bgMusic.muted;
+        muteBtn.textContent = bgMusic.muted ? '🔇' : '🔊';
+    });
+
+    document.getElementById('openBtn').addEventListener('click', function() {
+        this.style.opacity = '0';
+        setTimeout(() => this.style.display = 'none', 500);
+        
+        // Start Music
+        bgMusic.play().catch(e => console.log("Autoplay blocked:", e));
+        
+        // Start Animation Logic
+        textVisible = true;
+        triggerTime = Date.now();
     });
 
     // --- SAFETY CHECK ---
-    if (typeof Matter === 'undefined') {
-        alert("Error: 'matter.min.js' not found. Please ensure the file is downloaded and in the same folder as this HTML file.");
-    }
+    if (typeof Matter === 'undefined') alert("Error: 'matter.min.js' not found.");
 
-    // --- MATTER.JS LOGIC ---
+    // --- MATTER.JS LOGIC (Original + Retina Fix) ---
     const { Engine, World, Bodies, Body, Common, Mouse, MouseConstraint } = Matter;
 
     let width = window.innerWidth;
@@ -257,7 +345,7 @@
     engine.gravity.y = 1; 
     const world = engine.world;
 
-    // --- RETINA FIX START ---
+    // Retina Canvas Setup
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
@@ -266,23 +354,20 @@
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
     ctx.scale(dpr, dpr);
-    document.body.appendChild(canvas);
-    // --- RETINA FIX END ---
+    
+    // Append canvas to the Home Page Container, NOT the body directly
+    document.getElementById('home-page').appendChild(canvas);
 
-    const c_default = 0x0001; 
-    const c_falling = 0x0002; 
-    const c_landed  = 0x0004; 
+    const c_default = 0x0001, c_falling = 0x0002, c_landed  = 0x0004; 
 
     let ground = Bodies.rectangle(width / 2, height + 30, width, 100, { 
-        isStatic: true,
-        collisionFilter: { category: c_default }
+        isStatic: true, collisionFilter: { category: c_default } 
     });
     World.add(world, [ground]);
 
     const mouse = Mouse.create(canvas);
     const mouseConstraint = MouseConstraint.create(engine, {
-        mouse: mouse,
-        constraint: { stiffness: 0.2, render: { visible: false } }
+        mouse: mouse, constraint: { stiffness: 0.2, render: { visible: false } }
     });
     World.add(world, mouseConstraint);
     mouse.element.removeEventListener("mousewheel", mouse.mousewheel);
@@ -304,15 +389,12 @@
     function initLetters() {
         letters.forEach(l => World.remove(world, l.body));
         letters = [];
-
         scale = Math.min(1, width / baseWidth);
-        
         const charSize = 18 * scale;      
         const charSpacing = 11 * scale;   
         const lineHeight = 35 * scale;    
         const bodyWidth = 10 * scale;     
         const bodyHeight = 16 * scale;    
-
         const totalBlockHeight = quote.length * lineHeight;
         const startY = (height - totalBlockHeight) / 2;
 
@@ -325,35 +407,19 @@
             
             chars.forEach((char, charIdx) => {
                 if (char === " ") return;
-                
                 const x = xOffset + (charIdx * charSpacing) + (charSpacing / 2);
                 const y = startY + (lineIdx * lineHeight);
-
                 const b = Bodies.rectangle(x, y, bodyWidth, bodyHeight, {
                     isStatic: true,
                     chamfer: { radius: 2 * scale },
-                    frictionAir: 0.05, 
-                    restitution: 0.0, 
-                    friction: 0.5,    
-                    collisionFilter: {
-                        category: c_falling,
-                        mask: c_default | c_landed 
-                    }
+                    frictionAir: 0.05, restitution: 0.0, friction: 0.5,    
+                    collisionFilter: { category: c_falling, mask: c_default | c_landed }
                 });
-
-                letters.push({ 
-                    body: b, 
-                    char: char, 
-                    lineIdx: lineIdx,
-                    released: false,
-                    isLanded: false,
-                    fontSize: charSize 
-                });
+                letters.push({ body: b, char: char, lineIdx: lineIdx, released: false, isLanded: false, fontSize: charSize });
                 World.add(world, b);
             });
         });
     }
-
     initLetters();
 
     const lineDelays = {}; 
@@ -362,42 +428,23 @@
         lineDelays[i] = accumulatedDelay;
         accumulatedDelay += (1200 + (quote[i].length * 30)); 
     }
-    
     const totalReleaseTime = accumulatedDelay;
 
     window.addEventListener('resize', () => {
         width = window.innerWidth;
         height = window.innerHeight;
-
         const dpr = window.devicePixelRatio || 1;
         canvas.width = width * dpr;
         canvas.height = height * dpr;
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
         ctx.scale(dpr, dpr);
-
         Body.setPosition(ground, { x: width / 2, y: height + 30 });
         Body.setVertices(ground, [
-            { x: 0, y: height }, 
-            { x: width, y: height }, 
-            { x: width, y: height + 60 }, 
-            { x: 0, y: height + 60 }
+            { x: 0, y: height }, { x: width, y: height }, 
+            { x: width, y: height + 60 }, { x: 0, y: height + 60 }
         ]);
-        
-        if (!textVisible) {
-            initLetters();
-        }
-    });
-
-    document.getElementById('openBtn').addEventListener('click', function() {
-        this.style.opacity = '0';
-        setTimeout(() => this.style.display = 'none', 500);
-        
-        // --- START MUSIC ---
-        bgMusic.play().catch(e => console.log("Audio autoplay prevented"));
-
-        textVisible = true;
-        triggerTime = Date.now();
+        if (!textVisible) initLetters();
     });
 
     function update() {
@@ -407,23 +454,17 @@
             if (opacity < 1) opacity += 0.05;
             if (elapsed > 2500) {
                 const dropElapsed = elapsed - 2500;
-                
                 if (!cardShown && dropElapsed > totalReleaseTime + 300) {
                     document.getElementById('invitation-card').classList.add('fade-in');
                     document.querySelector('nav').classList.add('fade-in');
-                    
-                    // Reveal Mute Button
                     document.getElementById('muteBtn').classList.add('fade-in');
-
                     cardShown = true;
                 }
-
                 letters.forEach(l => {
                     if (!l.released) {
                         const sequenceDelay = lineDelays[l.lineIdx];
                         const distFromCenter = Math.abs(l.body.position.x - width / 2);
                         const vShapeDelay = distFromCenter * 8; 
-
                         if (dropElapsed > sequenceDelay + vShapeDelay) {
                             l.released = true;
                             Body.setStatic(l.body, false);
