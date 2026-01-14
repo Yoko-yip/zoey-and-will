@@ -23,8 +23,18 @@
         nav {
             position: absolute;
             top: 40px;
-            right: 80px; /* Requested padding */
+            right: 80px; 
             z-index: 100;
+            
+            /* HIDDEN INITIALLY */
+            opacity: 0; 
+            pointer-events: none; 
+            transition: opacity 2s ease-in-out;
+        }
+
+        nav.fade-in {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .nav-links {
@@ -45,49 +55,69 @@
             transition: color 0.3s;
         }
 
-        .nav-links a:hover {
-            color: #666;
-        }
-
-        /* Selected State (Underscore) */
-        .nav-links a.active {
-            border-bottom: 2px solid #333;
-            padding-bottom: 5px;
-        }
+        .nav-links a:hover { color: #666; }
+        .nav-links a.active { border-bottom: 2px solid #333; padding-bottom: 5px; }
 
         /* Mobile Menu Icon */
         .menu-icon {
             display: none;
-            font-size: 24px;
+            font-size: 28px;
             cursor: pointer;
             color: #333;
             user-select: none;
+            position: relative;
+            z-index: 300; 
         }
 
-        /* Responsive Styles */
+        /* --- MUTE BUTTON --- */
+        #muteBtn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 100;
+            font-size: 24px;
+            cursor: pointer;
+            color: #333;
+            opacity: 0; /* Hidden initially */
+            transition: opacity 2s ease-in-out;
+            background: none;
+            border: none;
+            padding: 10px;
+        }
+        #muteBtn.fade-in { opacity: 0.7; }
+        #muteBtn:hover { opacity: 1; }
+
+        /* --- MOBILE FULL SCREEN MENU --- */
         @media (max-width: 768px) {
-            nav {
-                right: 20px; /* Adjusted slightly for small screens, or keep 80px if strict */
-            }
-            .menu-icon {
-                display: block;
-            }
+            nav { right: 20px; }
+            .menu-icon { display: block; }
+            
             .nav-links {
-                display: none; /* Hidden by default on mobile */
+                display: none; 
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background-color: #f0eee6; 
                 flex-direction: column;
-                position: absolute;
-                right: 0;
-                top: 30px;
-                background-color: rgba(240, 238, 230, 0.95);
-                border: 1px solid #333;
-                padding: 20px;
-                width: 120px;
-                text-align: right;
-                gap: 20px;
+                justify-content: center;
+                align-items: center;
+                gap: 50px; 
+                z-index: 200; 
             }
+
             .nav-links.show {
                 display: flex;
+                animation: fadeInMenu 0.3s ease-in-out;
             }
+
+            .nav-links a { font-size: 24px; }
+        }
+
+        @keyframes fadeInMenu {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         /* --- UI CONTAINER (BUTTON) --- */
@@ -147,6 +177,12 @@
 </head>
 <body>
 
+    <audio id="bgMusic" loop>
+        <source src="music.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="muteBtn">🔊</div>
+
     <nav>
         <div class="menu-icon" onclick="toggleMenu()">☰</div>
         <ul class="nav-links" id="navLinks">
@@ -179,10 +215,37 @@
     // --- NAVIGATION LOGIC ---
     function toggleMenu() {
         const navLinks = document.getElementById('navLinks');
+        const menuIcon = document.querySelector('.menu-icon');
+        
         navLinks.classList.toggle('show');
+        
+        if (navLinks.classList.contains('show')) {
+            menuIcon.textContent = '✕';
+        } else {
+            menuIcon.textContent = '☰';
+        }
     }
 
-    // --- MATTER.JS LOGIC (Original Code) ---
+    // --- MUTE BUTTON LOGIC ---
+    const bgMusic = document.getElementById('bgMusic');
+    const muteBtn = document.getElementById('muteBtn');
+
+    muteBtn.addEventListener('click', () => {
+        if (bgMusic.muted) {
+            bgMusic.muted = false;
+            muteBtn.textContent = '🔊'; // Sound On Icon
+        } else {
+            bgMusic.muted = true;
+            muteBtn.textContent = '🔇'; // Mute Icon
+        }
+    });
+
+    // --- SAFETY CHECK ---
+    if (typeof Matter === 'undefined') {
+        alert("Error: 'matter.min.js' not found. Please ensure the file is downloaded and in the same folder as this HTML file.");
+    }
+
+    // --- MATTER.JS LOGIC ---
     const { Engine, World, Bodies, Body, Common, Mouse, MouseConstraint } = Matter;
 
     let width = window.innerWidth;
@@ -194,24 +257,18 @@
     engine.gravity.y = 1; 
     const world = engine.world;
 
+    // --- RETINA FIX START ---
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    
-    // Get the device pixel ratio (1 for standard, 2 or 3 for Retina/Phones)
     const dpr = window.devicePixelRatio || 1;
-    
-    // Set actual render size (multiplied by dpr)
     canvas.width = width * dpr;
     canvas.height = height * dpr;
-    
-    // Set display size (CSS) to logical pixels
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
-    
-    // Scale all drawing operations by dpr so logic remains the same
     ctx.scale(dpr, dpr);
-    
     document.body.appendChild(canvas);
+    // --- RETINA FIX END ---
+
     const c_default = 0x0001; 
     const c_falling = 0x0002; 
     const c_landed  = 0x0004; 
@@ -311,14 +368,13 @@
     window.addEventListener('resize', () => {
         width = window.innerWidth;
         height = window.innerHeight;
-        
+
         const dpr = window.devicePixelRatio || 1;
         canvas.width = width * dpr;
         canvas.height = height * dpr;
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
-        ctx.scale(dpr, dpr); // crucial to re-apply scale after resize
-        // ----------------------------
+        ctx.scale(dpr, dpr);
 
         Body.setPosition(ground, { x: width / 2, y: height + 30 });
         Body.setVertices(ground, [
@@ -336,6 +392,10 @@
     document.getElementById('openBtn').addEventListener('click', function() {
         this.style.opacity = '0';
         setTimeout(() => this.style.display = 'none', 500);
+        
+        // --- START MUSIC ---
+        bgMusic.play().catch(e => console.log("Audio autoplay prevented"));
+
         textVisible = true;
         triggerTime = Date.now();
     });
@@ -347,10 +407,17 @@
             if (opacity < 1) opacity += 0.05;
             if (elapsed > 2500) {
                 const dropElapsed = elapsed - 2500;
+                
                 if (!cardShown && dropElapsed > totalReleaseTime + 300) {
                     document.getElementById('invitation-card').classList.add('fade-in');
+                    document.querySelector('nav').classList.add('fade-in');
+                    
+                    // Reveal Mute Button
+                    document.getElementById('muteBtn').classList.add('fade-in');
+
                     cardShown = true;
                 }
+
                 letters.forEach(l => {
                     if (!l.released) {
                         const sequenceDelay = lineDelays[l.lineIdx];
